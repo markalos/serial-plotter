@@ -8,6 +8,18 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import animation
 
+
+class cacheData():
+    """docstring for cacheData"""
+    def __init__(self, data):
+        self.ycor = data
+
+    def setdata(self, data):
+        self.ycor = data
+
+    def getdata(self):
+        return self.ycor
+
 def list_serial_ports(extra=False):
 	""" Lists serial port names
 
@@ -20,6 +32,7 @@ def list_serial_ports(extra=False):
 	if sys.platform.startswith('win'):
 		ports = ['COM%s' % (i) for i in range(256)]
 		if extra:
+			# port stimulation by com0com, this weird format is need in wins
 			ports += ['\\\\.\\PORTB']
 	elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
 		# this excludes your current terminal "/dev/tty"
@@ -178,7 +191,7 @@ def handleSignal(figqueue, rawdataqueue):
 		signal = presignal + signal
 		data, remainder = decodesignal(signal)
 
-		if len(data):
+		if len(data) and len(data[0]):
 			nnewdata = len(data[0])
 			for i in xrange(nchannel):
 				datacache[i] += data[i]
@@ -203,6 +216,7 @@ def handleSignal(figqueue, rawdataqueue):
 			data, presignal = handleData(signal)
 			if len(data) > 0:
 				figqueue.put(data)
+
 
 
 def drawData(figqueue):
@@ -257,7 +271,7 @@ def drawData3(fifoqueue):
 	ycor = np.zeros(framewinsize)
 
 	channels = [axarr.plot([], [])[0] for i in xrange(1)]
-
+	history = cacheData(ycor)
 	def init():
 		for line in channels:
 			line.set_data(xcor,ycor)
@@ -281,6 +295,9 @@ def drawData3(fifoqueue):
 				low = low - 0.01
 			axarr.set_ylim(low, upper)
 			channels[0].set_ydata(data[7])
+			history.setdata(data[7])
+		else :
+			channels[0].set_ydata(history.getdata())
 			# ax.set_ylim(ylow, yupper)
 		return channels
 
